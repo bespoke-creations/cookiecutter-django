@@ -1,0 +1,27 @@
+[
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "password": "argon2$argon2id$v=19$m=102400,t=2,p=8$WWlOUU1PZG5BT3FnSlNMMmh4aFBtTw$i4w+g2dbo/ASlkA+qvJGtMTvIP9bNEQZTDDhCPT8RTw",
+      "is_superuser": true,
+      "username": "admin",
+      "email": "{{ cookiecutter.email }}",
+      "is_staff": true,
+      "is_active": true,
+      "name": "",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "email": "{{ cookiecutter.email }}",
+      "verified": true,
+      "primary": true
+    }
+  }
+]

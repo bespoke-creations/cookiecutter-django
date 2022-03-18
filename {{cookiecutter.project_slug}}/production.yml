@@ -1,9 +1,16 @@
 version: '3'
 
-volumes:
-  production_postgres_data: {}
-  production_postgres_data_backups: {}
-  production_traefik: {}
+networks:
+  web:
+    external: true
+
+ volumes:
+-  production_postgres_data: {}
+-  production_postgres_data_backups: {}
+-  production_traefik: {}
+  {{ cookiecutter.project_slug }}_production_postgres_data: {}
+  {{ cookiecutter.project_slug }}_production_postgres_data_backups: {}
+  {{ cookiecutter.project_slug }}_production_traefik: {}
 
 services:
   django:{% if cookiecutter.use_celery == 'y' %} &django{% endif %}
@@ -11,13 +18,14 @@ services:
       context: .
       dockerfile: ./compose/production/django/Dockerfile
     image: {{ cookiecutter.project_slug }}_production_django
-    platform: linux/x86_64
+#    platform: linux/x86_64
     depends_on:
       - postgres
       - redis
     env_file:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
+      - ./.env-prod
     command: /start
 
   postgres:
@@ -26,10 +34,11 @@ services:
       dockerfile: ./compose/production/postgres/Dockerfile
     image: {{ cookiecutter.project_slug }}_production_postgres
     volumes:
-      - production_postgres_data:/var/lib/postgresql/data:Z
-      - production_postgres_data_backups:/backups:z
+      - {{ cookiecutter.project_slug }}_production_postgres_data:/var/lib/postgresql/data:Z
+      - {{ cookiecutter.project_slug }}_production_postgres_data_backups:/backups:z
     env_file:
       - ./.envs/.production/.postgres
+      - ./.env-prod
 
   traefik:
     build:
@@ -39,13 +48,28 @@ services:
     depends_on:
       - django
     volumes:
-      - production_traefik:/etc/traefik/acme:z
+      - {{ cookiecutter.project_slug }}_production_traefik:/etc/traefik/acme:z
     ports:
-      - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443"
-      {%- if cookiecutter.use_celery == 'y' %}
-      - "0.0.0.0:5555:5555"
-      {%- endif %}
+      - ":80"
+      - ":443"
+    external_links:
+      - traefik
+    networks:
+      - default
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.rule=HostRegexp(`{{ cookiecutter.project_slug }}.{domain:[a-z]+}.{tld:[a-z]+}`, `{host:[a-z]+}.{{ cookiecutter.project_slug }}.{domain:[a-z]+}.{tld:[a-z]+}`)"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.priority=100"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.entrypoints=web,websecure"
+      - "traefik.http.services.{{ cookiecutter.project_slug }}.loadbalancer.server.port=443"
+      - "traefik.http.services.{{ cookiecutter.project_slug }}.loadbalancer.server.scheme=https"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.tls=true"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.tls.certresolver=dnsresolver"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.tls.domains[0].main={{ cookiecutter.project_slug }}.{{ cookiecutter.domain_name }}"
+      - "traefik.http.routers.{{ cookiecutter.project_slug }}.tls.domains[0].sans=*.{{ cookiecutter.project_slug }}.{{ cookiecutter.domain_name }}"
+      - "traefik.http.middlewares.test-compress.compress=true"
 
   redis:
     image: redis:6
@@ -74,6 +98,7 @@ services:
       dockerfile: ./compose/production/aws/Dockerfile
     env_file:
       - ./.envs/.production/.django
+      - ./.env-prod
     volumes:
       - production_postgres_data_backups:/backups:z
   {%- endif %}

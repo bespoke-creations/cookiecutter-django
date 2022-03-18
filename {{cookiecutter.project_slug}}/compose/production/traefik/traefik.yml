@@ -1,6 +1,9 @@
 log:
   level: INFO
 
+serversTransport:
+  insecureSkipVerify: true
+
 entryPoints:
   web:
     # http
@@ -21,6 +24,13 @@ entryPoints:
   {%- endif %}
 
 certificatesResolvers:
+  dnsresolver:
+    acme:
+      email: "{{ cookiecutter.email }}"
+      storage: /etc/traefik/acme/acme.json
+      dnsChallenge:
+        provider: route53
+
   letsencrypt:
     # https://docs.traefik.io/master/https/acme/#lets-encrypt
     acme:
@@ -32,12 +42,8 @@ certificatesResolvers:
 
 http:
   routers:
+    rule: "Host(`{{ cookiecutter.domain_name }}`) || Host(`{{ cookiecutter.project_slug}}.{{ cookiecutter.domain_name }}`)"
     web-secure-router:
-      {%- if cookiecutter.domain_name.count('.') == 1 %}
-      rule: "Host(`{{ cookiecutter.domain_name }}`) || Host(`www.{{ cookiecutter.domain_name }}`)"
-      {%- else %}
-      rule: "Host(`{{ cookiecutter.domain_name }}`)"
-      {%- endif %}
       entryPoints:
         - web-secure
       middlewares:
@@ -45,17 +51,18 @@ http:
       service: django
       tls:
         # https://docs.traefik.io/master/routing/routers/#certresolver
-        certResolver: letsencrypt
+        certResolver: dnsresolver
     {%- if cookiecutter.use_celery == 'y' %}
 
     flower-secure-router:
-      rule: "Host(`{{ cookiecutter.domain_name }}`)"
+      rule: "Host(`flower.{{ cookiecutter.project_slug}}.{{ cookiecutter.domain_name }}`)"
       entryPoints:
         - flower
+        - web-secure
       service: flower
       tls:
         # https://docs.traefik.io/master/routing/routers/#certresolver
-        certResolver: letsencrypt
+        certResolver: dnsresolver
     {%- endif %}
 
   middlewares:

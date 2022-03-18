@@ -10,6 +10,47 @@
 License: {{cookiecutter.open_source_license}}
 {%- endif %}
 
+## Getting Started
+
+```bash
+gh repo fork --clone=true https://github.com/bespoke-creations/{{cookiecutter.project_slug}}.git
+mkvirtualenv -p ~/.pyenv/versions/3.10.0/bin/python {{cookiecutter.project_slug}}-py3.10.0
+
+# In case project was created directly with cookiecutter and not cloned
+test -d .git || git init
+
+# put this in your .zshrc
+stage () { eval `grep -v '^#' .env-${1:-local} | sed -e 's/^\([[:upper:]_]*\)=\(.*\)$/export \1="\2";/g'` ; }
+# run this to load .env-local into your shell environment
+stage local
+
+pip install -U pip -Ur requirements.txt -Ur requirements/local.txt
+docker compose -f local.yml up -d postgres redis
+./manage.py collectstatic --noinput
+./manage.py reset_db --noinput && ./manage.py migrate && ./manage.py loaddata initial_data
+./manage.py runserver_plus
+open http://localhost:8000/admin
+    user: admin
+    pass: password
+    
+# Alternatively, to run everything under docker
+docker compose -f local.yml up --build
+open http://localhost:8000/admin
+```
+
+## Contributing
+
+```bash
+pre-commit install
+mkdir -p tmp
+
+isort . && mypy {{cookiecutter.project_slug}} && black . && flake8 . && tox -v
+open tmp/coverage/index.html
+git add . && git commit -m 'Descriptive message, Fixes #000'  # link this commit to a github issue
+git push
+gh pr create
+```
+
 ## Settings
 
 Moved to [settings](http://cookiecutter-django.readthedocs.io/en/latest/settings.html).

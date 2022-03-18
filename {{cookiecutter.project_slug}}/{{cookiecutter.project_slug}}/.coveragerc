@@ -1,0 +1,7 @@
+[run]
+omit =
+    {{ cookiecutter.project_slug }}/asgi.py
+    {{ cookiecutter.project_slug }}/*/admin.py
+    {{ cookiecutter.project_slug }}/*/*/admin.py
+    {{ cookiecutter.project_slug }}/*/migrations/*
+    {{ cookiecutter.project_slug }}/*/*/migrations/*

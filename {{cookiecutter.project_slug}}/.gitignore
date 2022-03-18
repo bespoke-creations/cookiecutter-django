@@ -344,3 +344,11 @@ project.min.css
 vendors.js
 *.min.js
 {%- endif %}
+
+#
+# Bespoke
+#
+
+.env-*
+.tox/
+tmp/
