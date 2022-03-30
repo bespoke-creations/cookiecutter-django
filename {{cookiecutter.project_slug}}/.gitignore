@@ -350,5 +350,9 @@ vendors.js
 #
 
 .env-*
-.tox/
 tmp/
+.env
+.envs/*
+!.envs/.local/
+!assets/env/
+.tox/
