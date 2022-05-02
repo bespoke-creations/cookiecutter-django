@@ -1,0 +1,7 @@
+
+  
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-f', 'compose/production/django/Dockerfile', '-t', 'gcr.io/timedoc-data-warehouse/chiron', '.' ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/timedoc-data-warehouse/chiron']
