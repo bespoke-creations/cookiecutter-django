@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-f', 'compose/production/django/Dockerfile', '-t', 'us-docker.pkg.dev/warehouse-002-348519/dw-test', '.' ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-docker.pkg.dev/warehouse-002-348519/dw-test']
