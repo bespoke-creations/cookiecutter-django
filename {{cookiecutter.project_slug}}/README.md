@@ -168,6 +168,12 @@ See detailed [cookiecutter-django Heroku documentation](http://cookiecutter-djan
 
 See detailed [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html).
 
+First you must create the project by cookiecutter then run the commands.
+
+gcloud auth login
+gcloud auth configure-docker
+gcloud builds submit
+
 {%- endif %}
 {%- if cookiecutter.frontend_pipeline == 'Gulp' %}
 ### Custom Bootstrap Compilation
