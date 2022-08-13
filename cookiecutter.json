@@ -59,5 +59,6 @@
     "Gitlab"
   ],
   "keep_local_envs_in_vcs": "y",
-  "debug": "n"
+  "debug": "n",
+  "gcp_project_id": "dw-bespoke-001"
 }
