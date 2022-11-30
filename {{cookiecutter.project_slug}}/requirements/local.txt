@@ -50,6 +50,7 @@ pytest-django==4.5.2  # https://github.com/pytest-dev/pytest-django
 gnureadline; platform_system == "Darwin"
 pyreadline; platform_system == "Windows"
 
+bandit
 pytest-cov
 pytest-xdist
 tox

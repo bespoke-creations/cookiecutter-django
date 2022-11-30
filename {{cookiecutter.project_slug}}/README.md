@@ -14,7 +14,7 @@ License: {{cookiecutter.open_source_license}}
 
 ```bash
 gh repo fork --clone=true https://github.com/bespoke-creations/{{cookiecutter.project_slug}}.git
-mkvirtualenv -p ~/.pyenv/versions/3.10.0/bin/python {{cookiecutter.project_slug}}-py3.10.0
+mkvirtualenv -p ~/.pyenv/versions/3.10.5/bin/python {{cookiecutter.project_slug}}-py3.10.5
 
 # In case project was created directly with cookiecutter and not cloned
 test -d .git || git init
@@ -24,11 +24,12 @@ stage () { eval `grep -v '^#' .env-${1:-local} | sed -e 's/^\([[:upper:]_]*\)=\(
 # run this to load .env-local into your shell environment
 stage local
 
-pip install -U pip -Ur requirements.txt -Ur requirements/local.txt
+pip install -U pip -U setuptools -U wheel ; pip install -Ur requirements/local.txt
 docker compose -f local.yml up -d postgres redis
+isort --profile black . && black . && flake8 . && bandit -q -c pyproject.toml -r {{cookiecutter.project_slug}} ; tox -v
 ./manage.py collectstatic --noinput
 ./manage.py reset_db --noinput && ./manage.py migrate && ./manage.py loaddata initial_data
-./manage.py runserver_plus
+./manage.py runserver
 open http://localhost:8000/admin
     user: admin
     pass: password
