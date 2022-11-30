@@ -346,13 +346,13 @@ vendors.js
 {%- endif %}
 
 #
-# Bespoke
+# SaaS Factory
 #
 
-.env-*
-tmp/
-.env
-.envs/*
 !.envs/.local/
 !assets/env/
+.env
+.env-*
+.envs/*
 .tox/
+tmp/

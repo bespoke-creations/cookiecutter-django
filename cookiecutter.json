@@ -2,8 +2,8 @@
   "project_name": "A Bespoke Creation",
   "project_slug": "{{ cookiecutter.project_name.lower()|replace(' ', '_')|replace('-', '_')|replace('.', '_')|trim() }}",
   "description": "A Bespoke Creation just for you!",
-  "author_name": "Bespoke Creations",
-  "domain_name": "bespoke-creations.us",
+  "author_name": "SaaS Factory",
+  "domain_name": "saasfactory.vc",
   "email": "admin@{{ cookiecutter.domain_name }}",
   "version": "0.1.0",
   "open_source_license": [
@@ -15,7 +15,7 @@
   ],
   "timezone": "UTC",
   "windows": "n",
-  "use_pycharm": "y",
+  "use_pycharm": "n",
   "use_docker": "y",
   "postgresql_version": [
     "14",
@@ -51,7 +51,7 @@
   "use_celery": "y",
   "use_mailhog": "n",
   "use_sentry": "y",
-  "use_whitenoise": "n",
+  "use_whitenoise": "y",
   "use_heroku": "n",
   "ci_tool": [
     "Github",
