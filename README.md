@@ -249,7 +249,7 @@ Have a blog or online publication? Write about your cookiecutter-django tips and
 ### SaaS Factory
 
 ```bash
-git clone https://github.com/tlpriest/cookiecutter-django.git
+git clone https://github.com/bespoke-creations/cookiecutter-django.git
 cd cookiecutter-django
 git checkout feature/bespoke
 cd ~/dev
