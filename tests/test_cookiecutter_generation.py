@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 import sys
@@ -20,6 +21,12 @@ if sys.platform.startswith("win"):
 elif sys.platform.startswith("darwin") and os.getenv("CI"):
     pytest.skip("skipping slow macOS tests on CI", allow_module_level=True)
 
+# Run auto-fixable styles checks - skipped on CI by default. These can be fixed
+# automatically by running pre-commit after generation however they are tedious
+# to fix in the template, so we don't insist too much in fixing them.
+AUTOFIXABLE_STYLES = os.getenv("AUTOFIXABLE_STYLES") == "1"
+auto_fixable = pytest.mark.skipif(not AUTOFIXABLE_STYLES, reason="auto-fixable")
+
 
 @pytest.fixture
 def context():
@@ -36,6 +43,8 @@ def context():
 
 
 SUPPORTED_COMBINATIONS = [
+    {"username_type": "username"},
+    {"username_type": "email"},
     {"open_source_license": "MIT"},
     {"open_source_license": "BSD"},
     {"open_source_license": "GPLv3"},
@@ -43,15 +52,16 @@ SUPPORTED_COMBINATIONS = [
     {"open_source_license": "Not open source"},
     {"windows": "y"},
     {"windows": "n"},
-    {"use_pycharm": "y"},
-    {"use_pycharm": "n"},
+    {"editor": "None"},
+    {"editor": "PyCharm"},
+    {"editor": "VS Code"},
     {"use_docker": "y"},
     {"use_docker": "n"},
+    {"postgresql_version": "16"},
+    {"postgresql_version": "15"},
     {"postgresql_version": "14"},
     {"postgresql_version": "13"},
     {"postgresql_version": "12"},
-    {"postgresql_version": "11"},
-    {"postgresql_version": "10"},
     {"cloud_provider": "AWS", "use_whitenoise": "y"},
     {"cloud_provider": "AWS", "use_whitenoise": "n"},
     {"cloud_provider": "GCP", "use_whitenoise": "y"},
@@ -101,10 +111,11 @@ SUPPORTED_COMBINATIONS = [
     {"frontend_pipeline": "None"},
     {"frontend_pipeline": "Django Compressor"},
     {"frontend_pipeline": "Gulp"},
+    {"frontend_pipeline": "Webpack"},
     {"use_celery": "y"},
     {"use_celery": "n"},
-    {"use_mailhog": "y"},
-    {"use_mailhog": "n"},
+    {"use_mailpit": "y"},
+    {"use_mailpit": "n"},
     {"use_sentry": "y"},
     {"use_sentry": "n"},
     {"use_whitenoise": "y"},
@@ -115,6 +126,7 @@ SUPPORTED_COMBINATIONS = [
     {"ci_tool": "Travis"},
     {"ci_tool": "Gitlab"},
     {"ci_tool": "Github"},
+    {"ci_tool": "Drone"},
     {"keep_local_envs_in_vcs": "y"},
     {"keep_local_envs_in_vcs": "n"},
     {"debug": "y"},
@@ -134,13 +146,9 @@ def _fixture_id(ctx):
     return "-".join(f"{key}:{value}" for key, value in ctx.items())
 
 
-def build_files_list(root_dir):
+def build_files_list(base_dir):
     """Build a list containing absolute paths to the generated files."""
-    return [
-        os.path.join(dirpath, file_path)
-        for dirpath, subdirs, files in os.walk(root_dir)
-        for file_path in files
-    ]
+    return [os.path.join(dirpath, file_path) for dirpath, subdirs, files in os.walk(base_dir) for file_path in files]
 
 
 def check_paths(paths):
@@ -171,30 +179,87 @@ def test_project_generation(cookies, context, context_override):
 
 
 @pytest.mark.parametrize("context_override", SUPPORTED_COMBINATIONS, ids=_fixture_id)
-def test_flake8_passes(cookies, context_override):
-    """Generated project should pass flake8."""
+def test_ruff_check_passes(cookies, context_override):
+    """Generated project should pass ruff check."""
     result = cookies.bake(extra_context=context_override)
 
     try:
-        sh.flake8(_cwd=str(result.project_path))
+        sh.ruff("check", ".", _cwd=str(result.project_path))
+    except sh.ErrorReturnCode as e:
+        pytest.fail(e.stdout.decode())
+
+
+@auto_fixable
+@pytest.mark.parametrize("context_override", SUPPORTED_COMBINATIONS, ids=_fixture_id)
+def test_ruff_format_passes(cookies, context_override):
+    """Check whether generated project passes ruff format."""
+    result = cookies.bake(extra_context=context_override)
+
+    try:
+        sh.ruff(
+            "format",
+            ".",
+            _cwd=str(result.project_path),
+        )
+    except sh.ErrorReturnCode as e:
+        pytest.fail(e.stdout.decode())
+
+
+@auto_fixable
+@pytest.mark.parametrize("context_override", SUPPORTED_COMBINATIONS, ids=_fixture_id)
+def test_isort_passes(cookies, context_override):
+    """Check whether generated project passes isort style."""
+    result = cookies.bake(extra_context=context_override)
+
+    try:
+        sh.isort(_cwd=str(result.project_path))
+    except sh.ErrorReturnCode as e:
+        pytest.fail(e.stdout.decode())
+
+
+@auto_fixable
+@pytest.mark.parametrize("context_override", SUPPORTED_COMBINATIONS, ids=_fixture_id)
+def test_django_upgrade_passes(cookies, context_override):
+    """Check whether generated project passes django-upgrade."""
+    result = cookies.bake(extra_context=context_override)
+
+    python_files = [
+        file_path.removeprefix(f"{result.project_path}/")
+        for file_path in glob.glob(str(result.project_path / "**" / "*.py"), recursive=True)
+    ]
+    try:
+        sh.django_upgrade(
+            "--target-version",
+            "4.2",
+            *python_files,
+            _cwd=str(result.project_path),
+        )
     except sh.ErrorReturnCode as e:
         pytest.fail(e.stdout.decode())
 
 
 @pytest.mark.parametrize("context_override", SUPPORTED_COMBINATIONS, ids=_fixture_id)
-def test_black_passes(cookies, context_override):
-    """Generated project should pass black."""
+def test_djlint_lint_passes(cookies, context_override):
+    """Check whether generated project passes djLint --lint."""
+    result = cookies.bake(extra_context=context_override)
+
+    autofixable_rules = "H014,T001"
+    # TODO: remove T002 when fixed https://github.com/Riverside-Healthcare/djLint/issues/687
+    ignored_rules = "H006,H030,H031,T002"
+    try:
+        sh.djlint("--lint", "--ignore", f"{autofixable_rules},{ignored_rules}", ".", _cwd=str(result.project_path))
+    except sh.ErrorReturnCode as e:
+        pytest.fail(e.stdout.decode())
+
+
+@auto_fixable
+@pytest.mark.parametrize("context_override", SUPPORTED_COMBINATIONS, ids=_fixture_id)
+def test_djlint_check_passes(cookies, context_override):
+    """Check whether generated project passes djLint --check."""
     result = cookies.bake(extra_context=context_override)
 
     try:
-        sh.black(
-            "--check",
-            "--diff",
-            "--exclude",
-            "migrations",
-            ".",
-            _cwd=str(result.project_path),
-        )
+        sh.djlint("--check", ".", _cwd=str(result.project_path))
     except sh.ErrorReturnCode as e:
         pytest.fail(e.stdout.decode())
 
@@ -203,7 +268,7 @@ def test_black_passes(cookies, context_override):
     ["use_docker", "expected_test_script"],
     [
         ("n", "pytest"),
-        ("y", "docker-compose -f local.yml run django pytest"),
+        ("y", "docker compose -f local.yml run django pytest"),
     ],
 )
 def test_travis_invokes_pytest(cookies, context, use_docker, expected_test_script):
@@ -218,7 +283,7 @@ def test_travis_invokes_pytest(cookies, context, use_docker, expected_test_scrip
     with open(f"{result.project_path}/.travis.yml") as travis_yml:
         try:
             yml = yaml.safe_load(travis_yml)["jobs"]["include"]
-            assert yml[0]["script"] == ["flake8"]
+            assert yml[0]["script"] == ["ruff check ."]
             assert yml[1]["script"] == [expected_test_script]
         except yaml.YAMLError as e:
             pytest.fail(str(e))
@@ -228,12 +293,10 @@ def test_travis_invokes_pytest(cookies, context, use_docker, expected_test_scrip
     ["use_docker", "expected_test_script"],
     [
         ("n", "pytest"),
-        ("y", "docker-compose -f local.yml run django pytest"),
+        ("y", "docker compose -f local.yml run django pytest"),
     ],
 )
-def test_gitlab_invokes_flake8_and_pytest(
-    cookies, context, use_docker, expected_test_script
-):
+def test_gitlab_invokes_precommit_and_pytest(cookies, context, use_docker, expected_test_script):
     context.update({"ci_tool": "Gitlab", "use_docker": use_docker})
     result = cookies.bake(extra_context=context)
 
@@ -245,7 +308,9 @@ def test_gitlab_invokes_flake8_and_pytest(
     with open(f"{result.project_path}/.gitlab-ci.yml") as gitlab_yml:
         try:
             gitlab_config = yaml.safe_load(gitlab_yml)
-            assert gitlab_config["flake8"]["script"] == ["flake8"]
+            assert gitlab_config["precommit"]["script"] == [
+                "pre-commit run --show-diff-on-failure --color=always --all-files"
+            ]
             assert gitlab_config["pytest"]["script"] == [expected_test_script]
         except yaml.YAMLError as e:
             pytest.fail(e)
@@ -255,12 +320,10 @@ def test_gitlab_invokes_flake8_and_pytest(
     ["use_docker", "expected_test_script"],
     [
         ("n", "pytest"),
-        ("y", "docker-compose -f local.yml run django pytest"),
+        ("y", "docker compose -f local.yml run django pytest"),
     ],
 )
-def test_github_invokes_linter_and_pytest(
-    cookies, context, use_docker, expected_test_script
-):
+def test_github_invokes_linter_and_pytest(cookies, context, use_docker, expected_test_script):
     context.update({"ci_tool": "Github", "use_docker": use_docker})
     result = cookies.bake(extra_context=context)
 
@@ -309,17 +372,37 @@ def test_error_if_incompatible(cookies, context, invalid_context):
 
 
 @pytest.mark.parametrize(
-    ["use_pycharm", "pycharm_docs_exist"],
+    ["editor", "pycharm_docs_exist"],
     [
-        ("n", False),
-        ("y", True),
+        ("None", False),
+        ("PyCharm", True),
+        ("VS Code", False),
     ],
 )
-def test_pycharm_docs_removed(cookies, context, use_pycharm, pycharm_docs_exist):
-    """."""
-    context.update({"use_pycharm": use_pycharm})
+def test_pycharm_docs_removed(cookies, context, editor, pycharm_docs_exist):
+    context.update({"editor": editor})
     result = cookies.bake(extra_context=context)
 
     with open(f"{result.project_path}/docs/index.rst") as f:
         has_pycharm_docs = "pycharm/configuration" in f.read()
         assert has_pycharm_docs is pycharm_docs_exist
+
+
+def test_trim_domain_email(cookies, context):
+    """Check that leading and trailing spaces are trimmed in domain and email."""
+    context.update(
+        {
+            "use_docker": "y",
+            "domain_name": "   example.com   ",
+            "email": "  me@example.com  ",
+        }
+    )
+    result = cookies.bake(extra_context=context)
+
+    assert result.exit_code == 0
+
+    prod_django_env = result.project_path / ".envs" / ".production" / ".django"
+    assert "DJANGO_ALLOWED_HOSTS=.example.com" in prod_django_env.read_text()
+
+    base_settings = result.project_path / "config" / "settings" / "base.py"
+    assert '"me@example.com"' in base_settings.read_text()
