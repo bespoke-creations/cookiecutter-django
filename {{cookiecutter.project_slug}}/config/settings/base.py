@@ -14,7 +14,7 @@ STAGE = env("STAGE", default=env("DJANGO_SETTINGS_MODULE", default="local").rspl
 READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE", default=True)
 if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
-    env.read_env(str(ROOT_DIR / f".env-{STAGE}"))
+    env.read_env(str(BASE_DIR / f".env-{STAGE}"))
 
 # GENERAL
 # ------------------------------------------------------------------------------

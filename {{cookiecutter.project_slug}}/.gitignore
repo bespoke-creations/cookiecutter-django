@@ -361,5 +361,6 @@ webpack-stats.json
 .env
 .env-*
 .envs/*
+.idea/
 .tox/
 tmp/

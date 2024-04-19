@@ -14,7 +14,7 @@ License: {{cookiecutter.open_source_license}}
 
 ```bash
 gh repo fork --clone=true https://github.com/bespoke-creations/{{cookiecutter.project_slug}}.git
-mkvirtualenv -p ~/.pyenv/versions/3.10.5/bin/python {{cookiecutter.project_slug}}-py3.10.5
+mkvirtualenv -p ~/.pyenv/versions/3.12.2/bin/python {{cookiecutter.project_slug}}-py3.12.2
 
 # In case project was created directly with cookiecutter and not cloned
 test -d .git || git init
@@ -25,18 +25,19 @@ stage () { eval `grep -v '^#' .env-${1:-local} | sed -e 's/^\([[:upper:]_]*\)=\(
 stage local
 
 pip install -U pip -U setuptools -U wheel ; pip install -Ur requirements/local.txt
-docker compose -f local.yml up -d postgres redis
+docker compose up -d postgres redis
 isort --profile black . && black . && flake8 . && bandit -q -c pyproject.toml -r {{cookiecutter.project_slug}} ; tox -v
 ./manage.py collectstatic --noinput
 ./manage.py reset_db --noinput && ./manage.py migrate && ./manage.py loaddata initial_data
 ./manage.py runserver
 open http://localhost:8000/admin
-    user: admin
+    user: admin@{{ cookiecutter.domain_name.lower() | trim() }}
     pass: password
     
-# Alternatively, to run everything under docker
-docker compose -f local.yml up --build
-open http://localhost:8000/admin
+# Alternatively, access the django application running in docker listening on 18000
+docker compose up -d
+open http://localhost:18000/admin
+docker logs -f {{ cookiecutter.project_slug }}_local_django
 ```
 
 ## Contributing

@@ -83,6 +83,21 @@ PyUp brings you automated security and dependency updates used by Google and oth
 
 ## Usage
 
+### SaaS Factory
+
+Before following the standard instructions, make sure your environment is updated:
+
+```bash
+brew uninstall pyenv
+brew install pyenv --head
+brew install 3.12.2
+pyenv global 3.12.2
+mkvirtualenv -p ~/.pyenv/versions/3.12.2/bin/python cookiecutter-django-py3.12.2
+# This branch is already checked out, so use it to build a new project
+rm -rf a_bespoke_creation ; cookiecutter ~/dev/cookiecutter-django # or, from straight from github if you have no local changes
+rm -rf a_bespoke_creation ; cookiecutter https://github.com/bespoke-creations/cookiecutter-django.git --checkout feature/bespoke
+````
+
 Let's pretend you want to create a Django project called "redditclone". Rather than using `startproject`
 and then editing the results to include your name, email, and various configuration issues that always get forgotten until the worst possible moment, get [cookiecutter](https://github.com/cookiecutter/cookiecutter) to do all the work.
 

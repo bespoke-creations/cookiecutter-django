@@ -4,7 +4,7 @@
   "description": "A Bespoke Creation just for you!",
   "author_name": "SaaS Factory",
   "domain_name": "saasfactory.vc",
-  "email": "{{ admin@{{ cookiecutter.domain_name.lower() | trim() }}",
+  "email": "admin@{{ cookiecutter.domain_name.lower() | trim() }}",
   "version": "0.1.0",
   "open_source_license": [
     "Not open source",
@@ -13,10 +13,10 @@
     "GPLv3",
     "Apache Software License 2.0"
   ],
-  "username_type": ["username", "email"],
+  "username_type": ["email","username"],
   "timezone": "UTC",
   "windows": "n",
-  "editor": ["PyCharm", "None", "VS Code"],
+  "editor": ["None", "VS Code", "PyCharm"],
   "use_docker": "y",
   "postgresql_version": ["16", "15", "14", "13", "12"],
   "cloud_provider": ["AWS", "GCP", "Azure", "None"],
@@ -41,6 +41,6 @@
   "use_heroku": "y",
   "ci_tool": ["Github", "None", "Travis", "Gitlab", "Drone"],
   "keep_local_envs_in_vcs": "y",
-  "debug": "n",
+  "debug": "y",
   "gcp_project_id": "dw-bespoke-001"
 }

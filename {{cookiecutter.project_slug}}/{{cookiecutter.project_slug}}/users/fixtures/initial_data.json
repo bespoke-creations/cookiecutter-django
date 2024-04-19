@@ -5,8 +5,7 @@
     "fields": {
       "password": "argon2$argon2id$v=19$m=102400,t=2,p=8$WWlOUU1PZG5BT3FnSlNMMmh4aFBtTw$i4w+g2dbo/ASlkA+qvJGtMTvIP9bNEQZTDDhCPT8RTw",
       "is_superuser": true,
-      "username": "admin",
-      "email": "{{ cookiecutter.email }}",
+      "email": "admin@{{ cookiecutter.domain_name.lower() | trim() }}.test",
       "is_staff": true,
       "is_active": true,
       "name": "",
@@ -19,7 +18,7 @@
     "pk": 1,
     "fields": {
       "user": 1,
-      "email": "{{ cookiecutter.email }}",
+      "email": "admin@{{ cookiecutter.domain_name.lower() | trim() }}.test",
       "verified": true,
       "primary": true
     }

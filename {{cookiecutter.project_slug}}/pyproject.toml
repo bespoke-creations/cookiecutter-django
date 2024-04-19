@@ -12,7 +12,6 @@ norecursedirs = ["node_modules"]
 
 # ==== Coverage ====
 [tool.coverage.run]
-include = ["{{cookiecutter.project_slug}}/**"]
 omit = ["*/migrations/*", "*/tests/*"]
 plugins = ["django_coverage_plugin"]
 
@@ -169,12 +168,13 @@ force-single-line = true
 
 [tool.isort]
 profile = "black"
-line_length = 120
+line_length = 88
 skip_gitignore = true
 
 [tool.black]
-line-length = 120
+line-length = 88
 target-version = ['py39']
 
 [tool.bandit]
 target = "{{ cookiecutter.project_slug }}"
+skips = ["B101", "B106"]
