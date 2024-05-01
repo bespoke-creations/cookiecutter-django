@@ -3,7 +3,7 @@
 Werkzeug[watchdog]==3.0.2 # https://github.com/pallets/werkzeug
 ipdb==0.13.13  # https://github.com/gotcha/ipdb
 {%- if cookiecutter.use_docker == 'y' %}
-psycopg[c]==3.1.18  # https://github.com/psycopg/psycopg
+psycopg[binary]==3.1.18  # https://github.com/psycopg/psycopg
 {%- else %}
 psycopg[binary]==3.1.18  # https://github.com/psycopg/psycopg
 {%- endif %}
@@ -46,6 +46,7 @@ gnureadline; platform_system == "Darwin"
 pyreadline; platform_system == "Windows"
 
 bandit
+black
 pytest-cov
 pytest-xdist
 tox
